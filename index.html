@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FridgeChef - Cook With What You Have</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #2e7d4f;
+    --green-light: #e6f4ea;
+    --orange: #f28c28;
+    --orange-light: #fff3e6;
+    --cream: #fffaf3;
+    --text: #2b2b2b;
+    --muted: #777;
+    --white: #ffffff;
+    --shadow: 0 6px 20px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Poppins', sans-serif; background: var(--cream); color: var(--text); }
+
+  header {
+    background: linear-gradient(135deg, var(--green), #43a36a);
+    color: var(--white);
+    padding: 28px 20px 70px;
+    text-align: center;
+  }
+  .logo { display: flex; align-items: center; justify-content: center; gap: 12px; }
+  .logo h1 { font-size: 2.2rem; font-weight: 700; }
+  .logo h1 span { color: #ffd59e; }
+  header p { margin-top: 8px; opacity: 0.95; max-width: 600px; margin-left: auto; margin-right: auto; }
+
+  main { max-width: 1100px; margin: -45px auto 40px; padding: 0 16px; }
+
+  .card { background: var(--white); border-radius: 18px; box-shadow: var(--shadow); padding: 24px; margin-bottom: 24px; }
+  .card h2 { font-size: 1.25rem; margin-bottom: 6px; color: var(--green); }
+  .card .hint { color: var(--muted); font-size: 0.9rem; margin-bottom: 16px; }
+
+  .purpose { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .step { background: var(--orange-light); border-radius: 14px; padding: 16px; text-align: center; }
+  .step .num { font-size: 1.8rem; }
+  .step b { display: block; margin: 6px 0 4px; color: var(--orange); }
+  .step small { color: var(--muted); }
+
+  .search-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  #search {
+    flex: 1; min-width: 200px; padding: 12px 16px; border: 2px solid var(--green-light);
+    border-radius: 12px; font-size: 1rem; font-family: inherit; outline: none;
+  }
+  #search:focus { border-color: var(--green); }
+  button {
+    font-family: inherit; cursor: pointer; border: none; border-radius: 12px;
+    padding: 12px 18px; font-weight: 600; font-size: 0.95rem;
+  }
+  .btn-clear { background: #f1f1f1; color: var(--text); }
+  .btn-clear:hover { background: #e4e4e4; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; max-height: 260px; overflow-y: auto; padding: 4px; }
+  .chip {
+    background: var(--green-light); color: var(--green); padding: 8px 14px;
+    border-radius: 999px; font-size: 0.9rem; font-weight: 600; transition: 0.15s;
+    border: 2px solid transparent; user-select: none;
+  }
+  .chip:hover { border-color: var(--green); }
+  .chip.selected { background: var(--green); color: var(--white); }
+
+  .selected-bar { margin-top: 14px; font-size: 0.95rem; color: var(--muted); }
+  .selected-bar b { color: var(--orange); }
+
+  .results-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+  .toggle { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--muted); cursor: pointer; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px; }
+  .recipe {
+    background: var(--white); border-radius: 16px; box-shadow: var(--shadow); padding: 18px;
+    border-top: 5px solid var(--orange); display: flex; flex-direction: column; gap: 10px;
+  }
+  .recipe.ready { border-top-color: var(--green); }
+  .recipe .top { display: flex; align-items: center; gap: 10px; }
+  .recipe .emoji { font-size: 2rem; }
+  .recipe h3 { font-size: 1.05rem; }
+  .recipe .time { font-size: 0.8rem; color: var(--muted); }
+  .bar { height: 8px; background: #eee; border-radius: 999px; overflow: hidden; }
+  .bar div { height: 100%; background: var(--orange); border-radius: 999px; }
+  .recipe.ready .bar div { background: var(--green); }
+  .match { font-size: 0.85rem; font-weight: 600; }
+  .ing { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ing span { font-size: 0.78rem; padding: 4px 10px; border-radius: 999px; }
+  .have { background: var(--green-light); color: var(--green); }
+  .miss { background: #fdecea; color: #c0392b; text-decoration: line-through; }
+  .badge { align-self: flex-start; font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--green); color: var(--white); }
+
+  .empty { text-align: center; color: var(--muted); padding: 40px 10px; }
+  .empty div { font-size: 3rem; margin-bottom: 10px; }
+
+  footer { text-align: center; color: var(--muted); font-size: 0.85rem; padding: 20px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <!-- Logo: a cooking pot with a leaf -->
+    <svg width="56" height="56" viewBox="0 0 64 64" aria-label="FridgeChef logo">
+      <circle cx="32" cy="32" r="31" fill="#ffffff"/>
+      <rect x="14" y="28" width="36" height="20" rx="6" fill="#f28c28"/>
+      <rect x="10" y="25" width="44" height="6" rx="3" fill="#2e7d4f"/>
+      <rect x="6" y="32" width="8" height="4" rx="2" fill="#f28c28"/>
+      <rect x="50" y="32" width="8" height="4" rx="2" fill="#f28c28"/>
+      <path d="M32 24 C32 14, 42 10, 46 12 C44 20, 38 24, 32 24 Z" fill="#43a36a"/>
+      <path d="M26 20 Q28 15 26 11" stroke="#bbb" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <path d="M21 21 Q23 16 21 12" stroke="#bbb" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </svg>
+    <h1>Fridge<span>Chef</span></h1>
+  </div>
+  <p>Tell us what is in your kitchen, and we will tell you what you can cook. Less food waste, more tasty meals!</p>
+</header>
+
+<main>
+  <section class="card">
+    <h2>How it works</h2>
+    <div class="purpose">
+      <div class="step"><div class="num">🧺</div><b>1. Pick ingredients</b><small>Select what you have at home</small></div>
+      <div class="step"><div class="num">🔎</div><b>2. We match</b><small>Search 50 recipes in our database</small></div>
+      <div class="step"><div class="num">🍽️</div><b>3. Start cooking</b><small>See what you can make and what is missing</small></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>What do you have in your kitchen?</h2>
+    <p class="hint">Click the ingredients you have. Salt, pepper, oil and water are assumed to be available.</p>
+    <div class="search-row">
+      <input id="search" type="text" placeholder="Search an ingredient (e.g. eggs, tomato)...">
+      <button class="btn-clear" onclick="clearAll()">Clear all</button>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div class="selected-bar" id="selectedBar">No ingredients selected yet.</div>
+  </section>
+
+  <section class="card">
+    <div class="results-head">
+      <h2 id="resultsTitle">Suggested recipes</h2>
+      <label class="toggle"><input type="checkbox" id="onlyReady"> Show only recipes I can cook now</label>
+    </div>
+    <div id="results"></div>
+  </section>
+</main>
+
+<footer>FridgeChef &copy; 2026 · A recipe suggestion website with 50 recipes</footer>
+
+<script>
+const recipes = [
+  { name: "Scrambled Eggs", emoji: "🍳", time: 10, ingredients: ["eggs", "butter", "milk"] },
+  { name: "Cheese Omelette", emoji: "🍳", time: 15, ingredients: ["eggs", "cheese", "onion", "tomato"] },
+  { name: "Menemen", emoji: "🍅", time: 20, ingredients: ["eggs", "tomato", "green pepper", "onion"] },
+  { name: "Pancakes", emoji: "🥞", time: 25, ingredients: ["flour", "eggs", "milk", "sugar", "butter"] },
+  { name: "French Toast", emoji: "🍞", time: 15, ingredients: ["bread", "eggs", "milk", "sugar", "butter"] },
+  { name: "Grilled Cheese Sandwich", emoji: "🥪", time: 10, ingredients: ["bread", "cheese", "butter"] },
+  { name: "Tomato Soup", emoji: "🥣", time: 30, ingredients: ["tomato", "onion", "garlic", "butter"] },
+  { name: "Lentil Soup", emoji: "🥣", time: 40, ingredients: ["lentils", "onion", "carrot", "butter"] },
+  { name: "Chicken Soup", emoji: "🍲", time: 50, ingredients: ["chicken", "carrot", "onion", "rice"] },
+  { name: "Spaghetti Bolognese", emoji: "🍝", time: 45, ingredients: ["pasta", "ground beef", "tomato", "onion", "garlic"] },
+  { name: "Pasta Carbonara", emoji: "🍝", time: 25, ingredients: ["pasta", "eggs", "cheese", "bacon"] },
+  { name: "Garlic Butter Pasta", emoji: "🍝", time: 15, ingredients: ["pasta", "butter", "garlic", "cheese"] },
+  { name: "Pasta with Tomato Sauce", emoji: "🍝", time: 25, ingredients: ["pasta", "tomato", "garlic", "onion"] },
+  { name: "Mac and Cheese", emoji: "🧀", time: 30, ingredients: ["pasta", "cheese", "milk", "butter", "flour"] },
+  { name: "Chicken Stir Fry", emoji: "🥘", time: 25, ingredients: ["chicken", "green pepper", "onion", "rice", "soy sauce"] },
+  { name: "Egg Fried Rice", emoji: "🍚", time: 20, ingredients: ["rice", "eggs", "carrot", "peas", "soy sauce"] },
+  { name: "Rice Pilaf", emoji: "🍚", time: 25, ingredients: ["rice", "butter"] },
+  { name: "Chickpea Stew", emoji: "🍲", time: 40, ingredients: ["chickpeas", "onion", "tomato paste", "butter"] },
+  { name: "White Bean Stew", emoji: "🍲", time: 60, ingredients: ["beans", "onion", "tomato paste", "butter"] },
+  { name: "Chicken Curry", emoji: "🍛", time: 40, ingredients: ["chicken", "onion", "garlic", "tomato", "yogurt", "rice"] },
+  { name: "Grilled Chicken Salad", emoji: "🥗", time: 20, ingredients: ["chicken", "lettuce", "tomato", "cucumber", "lemon"] },
+  { name: "Greek Salad", emoji: "🥗", time: 10, ingredients: ["tomato", "cucumber", "onion", "cheese", "olives"] },
+  { name: "Shepherd's Salad", emoji: "🥗", time: 10, ingredients: ["tomato", "cucumber", "onion", "green pepper", "lemon"] },
+  { name: "Potato Salad", emoji: "🥔", time: 30, ingredients: ["potato", "onion", "parsley", "lemon"] },
+  { name: "Mashed Potatoes", emoji: "🥔", time: 30, ingredients: ["potato", "butter", "milk"] },
+  { name: "French Fries", emoji: "🍟", time: 25, ingredients: ["potato"] },
+  { name: "Spanish Potato Omelette", emoji: "🥔", time: 30, ingredients: ["potato", "eggs", "onion"] },
+  { name: "Meatballs", emoji: "🧆", time: 30, ingredients: ["ground beef", "onion", "bread", "eggs", "parsley"] },
+  { name: "Hamburger", emoji: "🍔", time: 25, ingredients: ["ground beef", "bread", "lettuce", "tomato", "onion", "cheese"] },
+  { name: "Beef Tacos", emoji: "🌮", time: 25, ingredients: ["ground beef", "tortilla", "tomato", "lettuce", "cheese"] },
+  { name: "Chicken Wrap", emoji: "🌯", time: 20, ingredients: ["chicken", "tortilla", "lettuce", "tomato", "yogurt"] },
+  { name: "Veggie Quesadilla", emoji: "🫓", time: 15, ingredients: ["tortilla", "cheese", "green pepper", "onion"] },
+  { name: "Pizza Margherita", emoji: "🍕", time: 40, ingredients: ["flour", "yeast", "tomato", "cheese"] },
+  { name: "Tuna Pasta Salad", emoji: "🐟", time: 20, ingredients: ["pasta", "tuna", "corn", "mayonnaise"] },
+  { name: "Tuna Sandwich", emoji: "🥪", time: 10, ingredients: ["bread", "tuna", "mayonnaise", "lettuce"] },
+  { name: "Baked Salmon", emoji: "🐟", time: 25, ingredients: ["salmon", "lemon", "garlic", "butter"] },
+  { name: "Mushroom Risotto", emoji: "🍄", time: 40, ingredients: ["rice", "mushroom", "onion", "butter", "cheese"] },
+  { name: "Creamy Mushroom Pasta", emoji: "🍄", time: 25, ingredients: ["pasta", "mushroom", "cream", "garlic"] },
+  { name: "Stuffed Peppers", emoji: "🫑", time: 60, ingredients: ["green pepper", "rice", "ground beef", "onion", "tomato"] },
+  { name: "Eggplant Moussaka", emoji: "🍆", time: 70, ingredients: ["eggplant", "ground beef", "onion", "tomato"] },
+  { name: "Vegetable Soup", emoji: "🥕", time: 40, ingredients: ["potato", "carrot", "onion", "zucchini", "tomato"] },
+  { name: "Zucchini Fritters", emoji: "🥒", time: 30, ingredients: ["zucchini", "eggs", "flour", "cheese", "parsley"] },
+  { name: "Guacamole", emoji: "🥑", time: 10, ingredients: ["avocado", "tomato", "onion", "lemon"] },
+  { name: "Hummus", emoji: "🫘", time: 15, ingredients: ["chickpeas", "lemon", "garlic", "tahini"] },
+  { name: "Cacik (Yogurt Cucumber Dip)", emoji: "🥒", time: 10, ingredients: ["yogurt", "cucumber", "garlic"] },
+  { name: "Banana Smoothie", emoji: "🍌", time: 5, ingredients: ["banana", "milk", "honey"] },
+  { name: "Banana Bread", emoji: "🍌", time: 60, ingredients: ["banana", "flour", "eggs", "sugar", "butter"] },
+  { name: "Chocolate Cake", emoji: "🍰", time: 50, ingredients: ["flour", "eggs", "sugar", "cocoa", "milk", "butter"] },
+  { name: "Rice Pudding", emoji: "🍮", time: 45, ingredients: ["rice", "milk", "sugar"] },
+  { name: "Apple Crumble", emoji: "🍎", time: 45, ingredients: ["apple", "flour", "sugar", "butter"] }
+];
+
+const allIngredients = [...new Set(recipes.flatMap(r => r.ingredients))].sort();
+const selected = new Set();
+
+const chipsEl = document.getElementById("chips");
+const searchEl = document.getElementById("search");
+const resultsEl = document.getElementById("results");
+const onlyReadyEl = document.getElementById("onlyReady");
+
+function renderChips() {
+  const q = searchEl.value.trim().toLowerCase();
+  chipsEl.innerHTML = "";
+  allIngredients
+    .filter(i => i.includes(q))
+    .forEach(i => {
+      const chip = document.createElement("div");
+      chip.className = "chip" + (selected.has(i) ? " selected" : "");
+      chip.textContent = (selected.has(i) ? "✓ " : "+ ") + i;
+      chip.onclick = () => {
+        selected.has(i) ? selected.delete(i) : selected.add(i);
+        renderChips();
+        renderResults();
+      };
+      chipsEl.appendChild(chip);
+    });
+}
+
+function renderResults() {
+  const bar = document.getElementById("selectedBar");
+  bar.innerHTML = selected.size
+    ? "You selected <b>" + selected.size + "</b> ingredient(s): " + [...selected].join(", ")
+    : "No ingredients selected yet.";
+
+  if (selected.size === 0) {
+    resultsEl.innerHTML = '<div class="empty"><div>🥕</div>Select some ingredients above to see recipe suggestions.</div>';
+    document.getElementById("resultsTitle").textContent = "Suggested recipes";
+    return;
+  }
+
+  let scored = recipes.map(r => {
+    const have = r.ingredients.filter(i => selected.has(i));
+    const missing = r.ingredients.filter(i => !selected.has(i));
+    return { ...r, have, missing, score: have.length / r.ingredients.length };
+  }).filter(r => r.have.length > 0);
+
+  if (onlyReadyEl.checked) scored = scored.filter(r => r.missing.length === 0);
+
+  scored.sort((a, b) => a.missing.length - b.missing.length || b.score - a.score);
+
+  document.getElementById("resultsTitle").textContent = "Suggested recipes (" + scored.length + ")";
+
+  if (scored.length === 0) {
+    resultsEl.innerHTML = '<div class="empty"><div>🤔</div>No matching recipes. Try adding more ingredients.</div>';
+    return;
+  }
+
+  resultsEl.innerHTML = '<div class="grid">' + scored.map(r => {
+    const pct = Math.round(r.score * 100);
+    const ready = r.missing.length === 0;
+    return `
+      <div class="recipe ${ready ? "ready" : ""}">
+        ${ready ? '<span class="badge">✓ Ready to cook</span>' : ""}
+        <div class="top">
+          <div class="emoji">${r.emoji}</div>
+          <div><h3>${r.name}</h3><div class="time">⏱ ${r.time} min</div></div>
+        </div>
+        <div class="bar"><div style="width:${pct}%"></div></div>
+        <div class="match">${pct}% match · ${r.missing.length} missing</div>
+        <div class="ing">
+          ${r.have.map(i => `<span class="have">${i}</span>`).join("")}
+          ${r.missing.map(i => `<span class="miss">${i}</span>`).join("")}
+        </div>
+      </div>`;
+  }).join("") + "</div>";
+}
+
+function clearAll() {
+  selected.clear();
+  searchEl.value = "";
+  onlyReadyEl.checked = false;
+  renderChips();
+  renderResults();
+}
+
+searchEl.addEventListener("input", renderChips);
+onlyReadyEl.addEventListener("change", renderResults);
+
+renderChips();
+renderResults();
+</script>
+</body>
+</html>
